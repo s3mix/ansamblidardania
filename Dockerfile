@@ -6,7 +6,6 @@ RUN npm ci
 COPY resources ./resources
 COPY vite.config.js ./
 # if you use Tailwind config, copy it too (safe even if not present)
-COPY tailwind.config.* postcss.config.* ./ 2>/dev/null || true
 RUN npm run build
 
 # ---- Build PHP deps (Composer) ----
