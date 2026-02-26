@@ -30,7 +30,7 @@ RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoload
 
 
 # ---- Runtime: PHP (use built-in server on Render $PORT) ----
-FROM php:8.3-cli
+FROM php:8.4-cli
 
 # System deps + PHP extensions commonly needed by Laravel
 RUN apt-get update && apt-get install -y \
