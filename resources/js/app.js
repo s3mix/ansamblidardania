@@ -1,44 +1,48 @@
 import "./bootstrap";
 
 /* =========================
-   Mobile nav
+   Mobile nav (single source of truth)
 ========================= */
 const navToggle = document.getElementById("navToggle");
 const navMenu = document.getElementById("navMenu");
 
-if (navToggle && navMenu) {
-  navToggle.addEventListener("click", () => {
-    const open = navMenu.classList.toggle("is-open");
-    navToggle.setAttribute("aria-expanded", String(open));
-  });
-
-  navMenu.querySelectorAll("a").forEach((a) => {
-    a.addEventListener("click", () => {
-      navMenu.classList.remove("is-open");
-      navToggle.setAttribute("aria-expanded", "false");
-    });
-  });
+function closeNav() {
+  if (!navMenu || !navToggle) return;
+  navMenu.classList.remove("is-open");
+  navToggle.setAttribute("aria-expanded", "false");
 }
 
-/* =========================
-   Footer year
-========================= */
-const year = document.getElementById("year");
-if (year) year.textContent = String(new Date().getFullYear());
+function openNav() {
+  if (!navMenu || !navToggle) return;
+  navMenu.classList.add("is-open");
+  navToggle.setAttribute("aria-expanded", "true");
+}
 
-/* =========================
-   WhatsApp links (footer + FAB)
-========================= */
-const waMeta = document.querySelector('meta[name="wa-number"]')?.content;
-const waLink = document.getElementById("waLink");
-const fab = document.getElementById("fabWhatsApp");
+if (navToggle && navMenu) {
+  navToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = navMenu.classList.contains("is-open");
+    if (isOpen) closeNav();
+    else openNav();
+  });
 
-if (waMeta) {
-  const url = `https://wa.me/${waMeta}?text=${encodeURIComponent(
-    "Hi! I want to book Ansambli Dardania."
-  )}`;
-  if (waLink) waLink.href = url;
-  if (fab) fab.href = url;
+  // close when clicking any link inside menu
+  navMenu.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a) return;
+    closeNav();
+  });
+
+  // close when clicking outside
+  document.addEventListener("click", (e) => {
+    if (navMenu.contains(e.target) || navToggle.contains(e.target)) return;
+    closeNav();
+  });
+
+  // close on ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeNav();
+  });
 }
 
 /* =========================
@@ -76,14 +80,13 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
 });
 
 /* =========================
-   Modal system (supports stacked modals)
-   - Gallery stays open behind Lightbox
-   - ESC closes topmost modal only
+   Modal system (stacked modals)
 ========================= */
 (() => {
   const body = document.body;
 
-  const getOpenModals = () => Array.from(document.querySelectorAll(".modal.is-open"));
+  const getOpenModals = () =>
+    Array.from(document.querySelectorAll(".modal.is-open"));
 
   const lockScrollIfNeeded = () => {
     if (getOpenModals().length > 0) body.classList.add("no-scroll");
@@ -96,10 +99,7 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
 
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
-
-    // Bring to front by moving it to end of body (top of stacking order)
-    document.body.appendChild(modal);
-
+    document.body.appendChild(modal); // bring to front
     lockScrollIfNeeded();
   };
 
@@ -124,7 +124,7 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
     lockScrollIfNeeded();
   };
 
-  /* Open gallery modals */
+  // open gallery modals
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-open]");
     if (!btn) return;
@@ -134,16 +134,15 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
     if (id) openModal(id);
   });
 
-  /* Close modals on backdrop + X (anything with data-close) */
+  // close modals (backdrop or close button)
   document.addEventListener("click", (e) => {
     const closeEl = e.target.closest("[data-close]");
     if (!closeEl) return;
-
     const modal = closeEl.closest(".modal");
     closeModal(modal);
   });
 
-  /* ESC closes topmost open modal only */
+  // ESC closes topmost modal only
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const open = getOpenModals();
@@ -151,11 +150,7 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
     closeModal(top);
   });
 
-  /* Lightbox (single image fullscreen)
-     IMPORTANT:
-     - Do NOT close gallery
-     - Just open lightbox on top
-  */
+  // Lightbox open (do NOT close gallery)
   document.addEventListener("click", (e) => {
     const trigger = e.target.closest("[data-lightbox]");
     if (!trigger) return;
@@ -171,43 +166,71 @@ document.querySelectorAll("[data-pick-package]").forEach((btn) => {
     openModal("lightbox");
   });
 
-  /* Clicking the actual lightbox image should NOT close it */
+  // Clicking the actual lightbox image should NOT close it
   const lightboxImg = document.getElementById("lightboxImg");
   if (lightboxImg) {
     lightboxImg.addEventListener("click", (e) => e.stopPropagation());
   }
 })();
 
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.waBtn').forEach((btn) => {
+    btn.addEventListener('click', () => {
 
+      const form = btn.closest('form');
+      if (!form) return;
 
-// MOBILE NAV ONLY
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("mnavBtn");
-  const menu = document.getElementById("mnavMenu");
-  if (!btn || !menu) return;
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
 
-  const close = () => {
-    menu.classList.remove("is-open");
-    btn.setAttribute("aria-expanded", "false");
-    menu.setAttribute("aria-hidden", "true");
-  };
+      const get = (name) =>
+        form.querySelector(`[name="${name}"]`)?.value?.trim() || '';
 
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const open = menu.classList.toggle("is-open");
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    menu.setAttribute("aria-hidden", open ? "false" : "true");
+      const name = get('name');
+      const phone = get('phone');
+      const eventType = get('event_type');
+      const pkg = get('package');
+      const date = get('event_date');
+      const start = get('start_time');
+      const citySel = get('city_select');
+      const city = citySel === '__other__' ? get('city_other') : citySel;
+      const venue = get('venue');
+      const notes = get('notes');
+
+      const businessNumber = '355684422266';
+
+      const msg =
+`Pershendetje un dua te rezervoj Ansambli Dardania.
+Emri: ${name}
+Numri tel: ${phone}
+Lloji i Eventit: ${eventType}
+Paketa: ${pkg}
+Data: ${date}${start ? ` (${start})` : ''}
+Qyteti: ${city}
+Venue: ${venue || '-'}
+Shenimet: ${notes || '-'}`;
+
+      const url = `https://wa.me/${businessNumber}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    });
   });
+});
 
-  menu.addEventListener("click", (e) => {
-    if (e.target.closest("a")) close();
-  });
+  // toggle "Other city" input
+  const citySelect = document.getElementById('citySelect');
+  const cityOtherWrap = document.getElementById('cityOtherWrap');
+  const cityOther = document.getElementById('cityOther');
 
-  document.addEventListener("click", (e) => {
-    if (menu.contains(e.target) || btn.contains(e.target)) return;
-    close();
-  });
-});   
+  function syncCityOther() {
+    const isOther = citySelect?.value === '__other__';
+    if (!cityOtherWrap) return;
 
+    cityOtherWrap.style.display = isOther ? '' : 'none';
+    if (cityOther) cityOther.required = !!isOther;
+  }
+  citySelect?.addEventListener('change', syncCityOther);
+  syncCityOther();
 
-
+  

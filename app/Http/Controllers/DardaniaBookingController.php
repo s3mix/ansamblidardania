@@ -3,23 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class DardaniaBookingController extends Controller
 {
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required','string','max:80'],
-            'phone' => ['required','string','max:40'],
-            'event_type' => ['required','string','max:50'],
-            'event_date' => ['required','date'],
-            'start_time' => ['nullable','string','max:20'],
-            'package' => ['required','string','max:60'],
-            'city_select' => ['required','string','max:80'], // could be a city name OR "__other__"
-            'city_other' => ['nullable','string','max:80'],
-            'venue' => ['nullable','string','max:120'],
-            'notes' => ['nullable','string','max:500'],
+            'name'        => ['required','string','max:120'],
+            'phone'       => ['required','string','max:60'],
+            'event_type'  => ['required','string','max:60'],
+            'package'     => ['required','string','max:120'],
+            'event_date'  => ['required','date'],
+            'start_time'  => ['nullable','string','max:20'],
+            'city_select' => ['required','string','max:120'],
+            'city_other'  => ['nullable','string','max:120'],
+            'venue'       => ['nullable','string','max:200'],
+            'notes'       => ['nullable','string','max:1000'],
         ]);
 
         $city = $data['city_select'] === '__other__'
@@ -30,29 +29,32 @@ class DardaniaBookingController extends Controller
             return back()->withErrors(['city_other' => 'Please type your city.'])->withInput();
         }
 
-        $date = Carbon::parse($data['event_date'])->format('d M Y');
+        // Put your WhatsApp number in config/dardania.php OR .env
+        // Example: +3556xxxxxxx  => store as 3556xxxxxxx (no +, no spaces)
+        $waNumber = config('dardania.whatsapp_number') ?: env('WHATSAPP_NUMBER');
 
-        $businessName = config('dardania.business_name');
-        $waNumber = preg_replace('/\D+/', '', config('dardania.whatsapp_e164'));
+        if (!$waNumber) {
+            return back()->withErrors(['phone' => 'WhatsApp number is not configured on the server.'])->withInput();
+        }
 
-        $lines = array_filter([
-            "Booking request — {$businessName}",
+        $lines = [
+            "Hi! I want to book " . config('dardania.business_name', 'Ansambli Dardania') . ".",
             "",
             "Name: {$data['name']}",
             "WhatsApp/Phone: {$data['phone']}",
-            "Event: {$data['event_type']}",
-            "Date: {$date}",
-            $data['start_time'] ? "Start time: {$data['start_time']}" : null,
-            "City: {$city}",
-            $data['venue'] ? "Venue: {$data['venue']}" : null,
+            "Event type: {$data['event_type']}",
             "Package: {$data['package']}",
-            $data['notes'] ? "Notes: {$data['notes']}" : null,
-            "",
-            "Please confirm availability + price + deposit (if any).",
-        ]);
+            "Date: {$data['event_date']}",
+        ];
 
-        $msg = implode("\n", $lines);
-        $url = "https://wa.me/{$waNumber}?text=" . urlencode($msg);
+        if (!empty($data['start_time'])) $lines[] = "Start time: {$data['start_time']}";
+        $lines[] = "City: {$city}";
+        if (!empty($data['venue'])) $lines[] = "Venue/Address: {$data['venue']}";
+        if (!empty($data['notes'])) $lines[] = "Notes: {$data['notes']}";
+
+        $text = implode("\n", $lines);
+
+        $url = "https://wa.me/" . preg_replace('/\D+/', '', $waNumber) . "?text=" . urlencode($text);
 
         return redirect()->away($url);
     }

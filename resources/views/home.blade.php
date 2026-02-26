@@ -14,7 +14,8 @@
 
   // ✅ Put your photo filenames here (must exist in public/media/)
   $photoFiles = [
-    '01.jpeg','02.jpeg','03.jpeg','04.jpeg','05.jpeg','06.jpeg','07.jpeg','08.jpeg','09.jpeg','10.jpg','11.jpeg','12.jpeg','13.jpeg','14.jpeg','15.jpeg','16.jpeg'
+    '01.jpeg','02.jpeg','03.jpeg','04.jpeg','05.jpeg','06.jpeg','07.jpeg','08.jpeg',
+    '09.jpeg','10.jpg','11.jpeg','12.jpeg','13.jpeg','14.jpeg','15.jpeg','16.jpeg'
   ];
 @endphp
 
@@ -51,9 +52,8 @@
 
     <div class="hero__card">
       <h2>Quick Reservation</h2>
-      <p class="muted">Send details — we respond with availability + price.</p>
-
-      @include('booking-form', ['cities' => $cities])
+      <p class="muted small">Send details — we respond with availability + price.</p>
+      @include('booking-form', ['cities' => $cities, 'big' => false])
     </div>
   </div>
 </section>
@@ -62,6 +62,7 @@
   <div class="container">
     <div class="section__head">
       <h2>Performances</h2>
+      <p class="muted">Video + photos gallery (opens in modals).</p>
     </div>
 
     <div class="mediaGrid">
@@ -99,7 +100,7 @@
       </div>
     </div>
 
-    {{-- FULLSCREEN LIGHTBOX (single photo view) --}}
+    {{-- FULLSCREEN LIGHTBOX --}}
     <div class="modal" id="lightbox" aria-hidden="true">
       <div class="modal__backdrop" data-close></div>
       <div class="modal__panel modal__panel--wide">
@@ -168,7 +169,7 @@
             <div class="ribbon">Most booked</div>
           @endif
           <h3>{{ $p['name'] }}</h3>
-          <p class="muted">{{ $p['tag'] }} • {{ $p['time'] }}</p>
+          <p class="muted">{{ $p['desc'] ?? '' }}</p>
           <ul>
             @foreach($p['bullets'] as $b)
               <li>{{ $b }}</li>
@@ -234,4 +235,3 @@
   </div>
 </section>
 @endsection
-

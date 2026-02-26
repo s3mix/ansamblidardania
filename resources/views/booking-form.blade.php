@@ -90,8 +90,9 @@
       <textarea name="notes" rows="3" placeholder="Schedule, special dances, number of guests, etc.">{{ old('notes') }}</textarea>
     </label>
   </div>
-
-  <button class="btn btn--primary btn--full" type="submit">Send request on WhatsApp</button>
+<button class="waBtn btn btn--primary btn--full" type="button">
+  Send request on WhatsApp
+</button>
 
   @if($errors->any())
     <p class="fineprint">Fix the form errors and try again.</p>
