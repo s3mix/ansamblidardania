@@ -51,4 +51,4 @@ COPY --from=nodebuild /app/public/build ./public/build
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Render provides $PORT. Serve Laravel from /public.
-CMD ["bash", "-lc", "php artisan config:clear && php artisan route:clear && php artisan view:clear && php -S 0.0.0.0:${PORT} -t public"]
+CMD ["bash", "-lc", "php -S 0.0.0.0:${PORT} -t public"]
