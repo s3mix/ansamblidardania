@@ -5,7 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+# Copy what Vite/Laravel typically needs
 COPY resources ./resources
+COPY public ./public
 COPY vite.config.js ./
 
 RUN npm run build
@@ -15,10 +17,10 @@ RUN npm run build
 FROM composer:2 AS vendor
 WORKDIR /app
 
-# Copy composer files first (cache-friendly)
+# Cache-friendly
 COPY composer.json composer.lock ./
 
-# Copy minimum Laravel files needed so post-install scripts can run
+# Copy minimum Laravel files so post-install scripts can run (artisan must exist)
 COPY artisan ./artisan
 COPY bootstrap ./bootstrap
 COPY config ./config
@@ -29,10 +31,9 @@ COPY resources ./resources
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 
-# ---- Runtime: PHP (use built-in server on Render $PORT) ----
+# ---- Runtime: PHP (serve on Render $PORT) ----
 FROM php:8.4-cli
 
-# System deps + PHP extensions commonly needed by Laravel
 RUN apt-get update && apt-get install -y \
     git unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
   && docker-php-ext-install pdo_mysql zip \
@@ -43,12 +44,13 @@ WORKDIR /var/www/html
 # Copy full app
 COPY . .
 
-# Bring in vendor + built assets from previous stages
+# Bring in vendor + built assets
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=nodebuild /app/public/build ./public/build
 
-# Permissions for Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Ensure Laravel runtime dirs exist + are writable
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+ && chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
 
-# Render provides $PORT. Serve Laravel from /public.
 CMD ["bash", "-lc", "php -S 0.0.0.0:${PORT} -t public"]
